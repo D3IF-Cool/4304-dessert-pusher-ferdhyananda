@@ -75,7 +75,7 @@ class MainActivity : AppCompatActivity() {
         binding.dessertButton.setOnClickListener {
             onDessertClicked()
         }
-        dessertTimer = DessertTimer()
+        dessertTimer = DessertTimer(this.lifecycle)
 
 
         // Set the TextViews to the right values
@@ -89,8 +89,7 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
 //        Log . i ("MainActivity", "onStart Called")
-        Timber.i("onStart Called")
-        dessertTimer.startTimer()
+
     }
 
     override fun onResume() {
@@ -106,7 +105,7 @@ class MainActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
         Timber.i ("onStop Called")
-        dessertTimer.stopTimer()
+
     }
 
     override fun onDestroy() {
