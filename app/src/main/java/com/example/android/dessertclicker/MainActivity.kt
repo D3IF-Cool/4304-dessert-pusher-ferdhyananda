@@ -19,6 +19,7 @@ package com.example.android.dessertclicker
 import DessertTimer
 import android.content.ActivityNotFoundException
 import android.os.Bundle
+import android.os.PersistableBundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -28,6 +29,9 @@ import androidx.core.app.ShareCompat
 import androidx.databinding.DataBindingUtil
 import com.example.android.dessertclicker.databinding.ActivityMainBinding
 import timber.log.Timber
+
+const val KEY_REVENUE = "revenue_key"
+const val KEY_DESSERT_SOLD = "dessert_sold_key"
 
 class MainActivity : AppCompatActivity() {
 
@@ -77,111 +81,123 @@ class MainActivity : AppCompatActivity() {
         }
         dessertTimer = DessertTimer(this.lifecycle)
 
+        if (savedInstanceState != null) {
+            revenue = savedInstanceState.getInt(KEY_REVENUE, 0)
+            dessertsSold = savedInstanceState.getInt(KEY_DESSERT_SOLD, 0)
+            showCurrentDessert()
+        }
 
-        // Set the TextViews to the right values
-        binding.revenue = revenue
-        binding.amountSold = dessertsSold
 
-        // Make sure the correct dessert is showing
-        binding.dessertButton.setImageResource(currentDessert.imageId)
-    }
+            // Set the TextViews to the right values
+            binding.revenue = revenue
+            binding.amountSold = dessertsSold
 
-    override fun onStart() {
-        super.onStart()
+            // Make sure the correct dessert is showing
+            binding.dessertButton.setImageResource(currentDessert.imageId)
+        }
+
+        override fun onSaveInstanceState(outState: Bundle) {
+            super.onSaveInstanceState(outState)
+            outState.putInt(KEY_REVENUE, revenue)
+            outState.putInt(KEY_DESSERT_SOLD, dessertsSold)
+        }
+
+        override fun onStart() {
+            super.onStart()
 //        Log . i ("MainActivity", "onStart Called")
 
-    }
+        }
 
-    override fun onResume() {
-        super.onResume()
-        Timber.i("onResume Called")
-    }
+        override fun onResume() {
+            super.onResume()
+            Timber.i("onResume Called")
+        }
 
-    override fun onPause() {
-        super.onPause()
-        Timber.i("onPause Called")
-    }
+        override fun onPause() {
+            super.onPause()
+            Timber.i("onPause Called")
+        }
 
-    override fun onStop() {
-        super.onStop()
-        Timber.i ("onStop Called")
+        override fun onStop() {
+            super.onStop()
+            Timber.i("onStop Called")
 
-    }
+        }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        Timber.i ("onDestroy Called")
-    }
+        override fun onDestroy() {
+            super.onDestroy()
+            Timber.i("onDestroy Called")
+        }
 
-    override fun onRestart() {
-        super.onRestart()
-        Timber.i ("onRestart Called")
-    }
+        override fun onRestart() {
+            super.onRestart()
+            Timber.i("onRestart Called")
+        }
 
-    /**
-     * Updates the score when the dessert is clicked. Possibly shows a new dessert.
-     */
-    private fun onDessertClicked() {
+        /**
+         * Updates the score when the dessert is clicked. Possibly shows a new dessert.
+         */
+        private fun onDessertClicked() {
 
-        // Update the score
-        revenue += currentDessert.price
-        dessertsSold++
+            // Update the score
+            revenue += currentDessert.price
+            dessertsSold++
 
-        binding.revenue = revenue
-        binding.amountSold = dessertsSold
+            binding.revenue = revenue
+            binding.amountSold = dessertsSold
 
-        // Show the next dessert
-        showCurrentDessert()
-    }
+            // Show the next dessert
+            showCurrentDessert()
+        }
 
-    /**
-     * Determine which dessert to show.
-     */
-    private fun showCurrentDessert() {
-        var newDessert = allDesserts[0]
-        for (dessert in allDesserts) {
-            if (dessertsSold >= dessert.startProductionAmount) {
-                newDessert = dessert
+        /**
+         * Determine which dessert to show.
+         */
+        private fun showCurrentDessert() {
+            var newDessert = allDesserts[0]
+            for (dessert in allDesserts) {
+                if (dessertsSold >= dessert.startProductionAmount) {
+                    newDessert = dessert
+                }
+                // The list of desserts is sorted by startProductionAmount. As you sell more desserts,
+                // you'll start producing more expensive desserts as determined by startProductionAmount
+                // We know to break as soon as we see a dessert who's "startProductionAmount" is greater
+                // than the amount sold.
+                else break
             }
-            // The list of desserts is sorted by startProductionAmount. As you sell more desserts,
-            // you'll start producing more expensive desserts as determined by startProductionAmount
-            // We know to break as soon as we see a dessert who's "startProductionAmount" is greater
-            // than the amount sold.
-            else break
+
+            // If the new dessert is actually different than the current dessert, update the image
+            if (newDessert != currentDessert) {
+                currentDessert = newDessert
+                binding.dessertButton.setImageResource(newDessert.imageId)
+            }
         }
 
-        // If the new dessert is actually different than the current dessert, update the image
-        if (newDessert != currentDessert) {
-            currentDessert = newDessert
-            binding.dessertButton.setImageResource(newDessert.imageId)
+        /**
+         * Menu methods
+         */
+        private fun onShare() {
+            val shareIntent = ShareCompat.IntentBuilder.from(this)
+                    .setText(getString(R.string.share_text, dessertsSold, revenue))
+                    .setType("text/plain")
+                    .intent
+            try {
+                startActivity(shareIntent)
+            } catch (ex: ActivityNotFoundException) {
+                Toast.makeText(this, getString(R.string.sharing_not_available),
+                        Toast.LENGTH_LONG).show()
+            }
+        }
+
+        override fun onCreateOptionsMenu(menu: Menu): Boolean {
+            menuInflater.inflate(R.menu.main_menu, menu)
+            return super.onCreateOptionsMenu(menu)
+        }
+
+        override fun onOptionsItemSelected(item: MenuItem): Boolean {
+            when (item.itemId) {
+                R.id.shareMenuButton -> onShare()
+            }
+            return super.onOptionsItemSelected(item)
         }
     }
-
-    /**
-     * Menu methods
-     */
-    private fun onShare() {
-        val shareIntent = ShareCompat.IntentBuilder.from(this)
-                .setText(getString(R.string.share_text, dessertsSold, revenue))
-                .setType("text/plain")
-                .intent
-        try {
-            startActivity(shareIntent)
-        } catch (ex: ActivityNotFoundException) {
-            Toast.makeText(this, getString(R.string.sharing_not_available),
-                    Toast.LENGTH_LONG).show()
-        }
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.main_menu, menu)
-        return super.onCreateOptionsMenu(menu)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.shareMenuButton -> onShare()
-        }
-        return super.onOptionsItemSelected(item)
-    }
-}
